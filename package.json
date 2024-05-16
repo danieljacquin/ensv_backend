@@ -7,7 +7,10 @@
     "dev": "tsnd --respawn --clear src/app.ts",
     "build": "rimraf ./dist && tsc",
     "start": "npm run build && node dist/app.js",
-    "test:prod": "dotenv -e .env.production node dist/app.js"
+    "test:prod": "dotenv -e .env.production node dist/app.js",
+    "typeorm": "npx typeorm-ts-node-commonjs",
+    "typeorm:migration:run": "npm run typeorm -- migration:run -d src/config/data-source.ts",
+    "typeorm:migration:build:run": "npm run typeorm -- migration:run -d dist/config/data-source.js"
   },
   "keywords": [],
   "author": "",
