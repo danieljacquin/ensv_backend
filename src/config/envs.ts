@@ -11,4 +11,5 @@ export const envs = {
     username: envVar.get('USER_NAME').asString(),
     password: envVar.get('PASSWORD').asString(),
     database: envVar.get('DATABASE').asString(),
+    seed: envVar.get('SEED').asString(),
 }
