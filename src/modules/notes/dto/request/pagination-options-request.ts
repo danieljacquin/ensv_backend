@@ -1,4 +1,4 @@
-import { IsNumberString, IsOptional, IsString } from "class-validator";
+import { IsNumber, isNumber, IsNumberString, IsOptional, IsString } from "class-validator";
 import { State } from "../../../../enum/stateEnum";
 
 export class PaginationOptionsRequest {
@@ -12,5 +12,9 @@ export class PaginationOptionsRequest {
 
   @IsOptional()
   @IsString()
-  readonly state?: State
+  readonly state?: State;
+
+  @IsOptional()
+  @IsNumberString()
+  readonly categoryId?: number;
 }

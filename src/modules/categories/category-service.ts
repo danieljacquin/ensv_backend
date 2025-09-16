@@ -110,7 +110,7 @@ export class CategoryService {
     findOneCategoryInputDto: FindOneCategoryRequest
   ): Promise<CategoryResponse> {
     const category = await this.findOne(findOneCategoryInputDto);
-    //turn into from dto to class entity
+    //turn info from dto to class entity
     const categoryEntity = plainToInstance(Category, category);
     const eliminated = await this.categoryRepository.remove(categoryEntity);
     return plainToInstance(CategoryResponse, eliminated, {

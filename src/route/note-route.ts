@@ -7,10 +7,12 @@ import { DtoTypeEnum } from "../enum/dtoType.enum";
 import {
   CreateNoteRequest,
   FindOneNoteRequest,
+  FindUserFromTokenRequest,
   PaginationOptionsRequest,
   UpdateNoteRequest,
 } from "../modules/notes/dto/request";
 import UserService from "../modules/users/user-service";
+import { AuthMiddleware } from "../middlewares/auth.middleware";
 
 class NoteRoutes {
   static get routes(): Router {
@@ -23,31 +25,51 @@ class NoteRoutes {
 
     router.post(
       "/",
-      validationMiddleware(CreateNoteRequest, DtoTypeEnum.BODY),
+      [
+        AuthMiddleware.validateJwt(userService),
+        validationMiddleware(CreateNoteRequest, DtoTypeEnum.BODY),
+      ],
       controller.create
     );
-    router.get("/", validationMiddleware(PaginationOptionsRequest, DtoTypeEnum.PARAMS), controller.getAll);
+    router.get(
+      "/",
+      [
+        AuthMiddleware.validateJwt(userService),
+        validationMiddleware(PaginationOptionsRequest, DtoTypeEnum.QUERY),
+      ],
+      controller.getAll
+    );
     router.get(
       "/:id",
-      validationMiddleware(FindOneNoteRequest, DtoTypeEnum.PARAMS),
+      [
+        AuthMiddleware.validateJwt(userService),
+        validationMiddleware(FindOneNoteRequest, DtoTypeEnum.PARAMS),
+      ],
       controller.findOne
     );
     router.put(
-      "/:id",
+      "/",
       [
-        validationMiddleware(FindOneNoteRequest, DtoTypeEnum.PARAMS),
+        AuthMiddleware.validateJwt(userService),
+        validationMiddleware(FindUserFromTokenRequest, DtoTypeEnum.BODY),
         validationMiddleware(UpdateNoteRequest, DtoTypeEnum.BODY),
       ],
       controller.update
     );
     router.put(
       "/archiveAndUnarchive/:id",
-      validationMiddleware(FindOneNoteRequest, DtoTypeEnum.PARAMS),
+      [
+        AuthMiddleware.validateJwt(userService),
+        validationMiddleware(FindOneNoteRequest, DtoTypeEnum.PARAMS),
+      ],
       controller.archiveAndUnarchive
     );
     router.delete(
       "/:id",
-      validationMiddleware(FindOneNoteRequest, DtoTypeEnum.PARAMS),
+      [
+        AuthMiddleware.validateJwt(userService),
+        validationMiddleware(FindOneNoteRequest, DtoTypeEnum.PARAMS),
+      ],
       controller.delete
     );
 

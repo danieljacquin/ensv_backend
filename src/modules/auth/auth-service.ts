@@ -16,7 +16,7 @@ class AuthService {
     if (!exists) throw CustomError.badRequest("Email invalid");
     const correct = await exists!.checkPassword(password);
     if (!correct) throw CustomError.badRequest("Password invalid");
-    return await Jwt.generateToken({ id: exists.id, name: exists.name }, "1h");
+    return await Jwt.generateToken({ id: exists.id }, "1h");
   }
 }
 

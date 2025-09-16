@@ -11,13 +11,14 @@ class NoteController {
     ) { }
 
     create = (req: Request, res: Response) => {
-        return this.noteService.create(req.body)
+        return this.noteService.create(req.body, req.user)
             .then(note => res.json(note))
             .catch(err => errorHandler(err, res));
     }
 
     getAll = (req: Request, res: Response) => {
-        return this.noteService.getAll(req.query)
+        console.log(req.user);
+        return this.noteService.getAll(req.user, req.query)
             .then(notes => res.status(200).json(notes))
             .catch(err => errorHandler(err, res));
     }
@@ -29,6 +30,7 @@ class NoteController {
     }
 
     update = (req: Request, res: Response) => {
+        console.log(req.body);
         this.noteService.update(
             {id: parseInt(req.params.id)},
             req.body

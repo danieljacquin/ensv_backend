@@ -1,6 +1,6 @@
 import { FindManyOptions } from "typeorm";
 
-import { CategoryService } from "../categories/category-service";
+import { CategoryService } from '../categories/category-service';
 import { dataSource } from "../../config";
 import { Note } from "./note-entity";
 import { CustomError } from "../../error/custom-error";
@@ -10,6 +10,8 @@ import {
   CreateNoteRequest,
   FindOneNoteRequest,
   UpdateNoteRequest,
+  PaginationOptionsRequest,
+  FindUserFromTokenRequest,
 } from "./dto/request";
 import { NoteResponse } from "./dto/response/note-response";
 import UserService from "../users/user-service";
@@ -31,17 +33,18 @@ class NoteService {
 
   public noteRepository = dataSource.getRepository(Note);
 
-  async create(createNoteDto: CreateNoteRequest): Promise<NoteResponse> {
-    const { title, content, categories, userId } = createNoteDto;
+  async create(createNoteDto: CreateNoteRequest, findUserFromTokenRequest: FindUserFromTokenRequest): Promise<NoteResponse> {
+    const { title, content, categories } = createNoteDto;
+    const { userId } = findUserFromTokenRequest;
 
-    const user = await this.userService.findOne({id: userId})
+    const user = await this.userService.findOne({ id: userId });
     const existedCategories = await this.categoryService.findByIds(categories);
 
     const note = await this.noteRepository.save({
       title,
       content,
       categories: existedCategories,
-      user
+      user,
     });
 
     return plainToInstance(NoteResponse, note, {
@@ -49,20 +52,38 @@ class NoteService {
     });
   }
 
-  async getAll(object: any): Promise<CustomResponse> {
-    const { page = 1, perPage = 5, state } = object;
+  async getAll(
+    findUserFromTokenRequest: FindUserFromTokenRequest,
+    paginationOptionsRequest: PaginationOptionsRequest
+  ): Promise<CustomResponse> {
+    const { userId } = findUserFromTokenRequest;
+    const { page = 1, perPage = 5, state, categoryId } = paginationOptionsRequest;
 
+    const user = await this.userService.findOne({id: userId});
     let findOptions: FindManyOptions<Note> = {
       relations: {
         categories: true,
-        user: true
       },
       skip: Math.max(0, (page - 1) * perPage),
       take: perPage,
+      where :{
+        user: {id: user.id}
+      }
     };
 
+    //filter by category
+    if(categoryId){
+      const category = await this.categoryService.findOne({id: categoryId});
+      findOptions.where = {
+        ...findOptions.where,
+        categories: {id: category.id}
+      }
+    }
+
+    //filter by state
     if (state) {
       findOptions.where = {
+        ...findOptions.where,
         state,
       };
     }
@@ -116,7 +137,7 @@ class NoteService {
   ): Promise<any> {
     const { categories, title, content, userId } = updateCategoryDto;
     const note = await this.findOne(findOneNoteDto);
-    const user = await this.findOne({id: userId});
+    const user = await this.findOne({ id: userId });
     let dbcategories = await this.categoryService.findByIds(categories);
 
     const updated = await this.noteRepository.preload({
@@ -124,38 +145,48 @@ class NoteService {
       title: title,
       content: content,
       categories: dbcategories,
-      user
+      user,
     });
 
-    return plainToInstance(NoteResponse, await this.noteRepository.save(updated!), {
+    return plainToInstance(
+      NoteResponse,
+      await this.noteRepository.save(updated!),
+      {
+        excludeExtraneousValues: true,
+      }
+    );
+  }
+
+  async delete(findOneNoteRequest: FindOneNoteRequest): Promise<NoteResponse> {
+    const note = await this.findOne(findOneNoteRequest);
+    const deleted = await this.noteRepository.remove(note);
+    return plainToInstance(NoteResponse, deleted, {
       excludeExtraneousValues: true,
     });
   }
 
-  async delete(findOneNoteRequest: FindOneNoteRequest): Promise<NoteResponse> {
-        const note = await this.findOne(findOneNoteRequest);
-        const deleted = await this.noteRepository.remove(note)
-        return plainToInstance(NoteResponse, deleted, {
-          excludeExtraneousValues: true,
-        });
-    }
+  async archiveAndUnarchive(
+    findOneNoteRequest: FindOneNoteRequest
+  ): Promise<NoteResponse> {
+    const note = await this.findOne(findOneNoteRequest);
 
-    async archiveAndUnarchive(findOneNoteRequest: FindOneNoteRequest): Promise<NoteResponse> {
-        const note = await this.findOne(findOneNoteRequest);
+    const updated = await this.noteRepository.preload({
+      id: note.id,
+      title: note.title,
+      content: note.content,
+      state: note.state === State.ACTIVE ? State.UNACTIVE : State.ACTIVE,
+      categories: note.categories,
+      user: note.user,
+    });
 
-        const updated = await this.noteRepository.preload({
-            id: note.id,
-            title: note.title,
-            content: note.content,
-            state: note.state === State.ACTIVE ? State.UNACTIVE : State.ACTIVE,
-            categories: note.categories,
-            user: note.user
-        })
-
-        return plainToInstance(NoteResponse, await this.noteRepository.save(updated!), {
-          excludeExtraneousValues: true,
-        });
-    }
+    return plainToInstance(
+      NoteResponse,
+      await this.noteRepository.save(updated!),
+      {
+        excludeExtraneousValues: true,
+      }
+    );
+  }
 }
 
 export default NoteService;

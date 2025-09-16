@@ -12,9 +12,5 @@ export class CreateNoteRequest {
   @IsArray()
   readonly categories!: Array<number>;
 
-  @IsNotEmpty()
-  @IsNumber()
-  readonly userId!: number;
-
 }
 
